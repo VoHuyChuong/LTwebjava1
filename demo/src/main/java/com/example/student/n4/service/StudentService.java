@@ -1,7 +1,7 @@
-package com.example.student.service;
+package com.example.student.n4.service;
 
-import com.example.student.entity.Student;
-import com.example.student.repository.StudentRepository;
+import com.example.student.n4.entity.Student;
+import com.example.student.n4.repository.StudentRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

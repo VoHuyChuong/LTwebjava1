@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quản lý chương trình – môn học</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 "Segoe UI",Roboto,Arial,sans-serif;background:#f4f7fb;color:#1f2d3d}
+header{position:fixed;inset:0 0 auto 0;height:50px;background:#1f5fa8;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:5}
+header b{font-size:16px;letter-spacing:.3px}
+aside{position:fixed;top:50px;bottom:0;left:0;width:243px;background:#14243f;color:#cfd8e6;padding:10px 6px;overflow:auto}
+aside a{display:block;padding:10px 14px;border-radius:5px;color:#cfd8e6;text-decoration:none;cursor:pointer}
+aside a:hover{background:#1d3358}
+aside a.grp{background:#1976d2;color:#fff;margin-top:6px}
+aside .sub{background:#1a2f52;border-radius:5px;margin:4px 0 8px;padding:4px}
+aside .sub a{padding:8px 14px 8px 26px;font-size:13.5px}
+aside .sub a.on{background:#2a4a7c;color:#fff;font-weight:600}
+main{margin:50px 0 0 243px;padding:14px 22px 40px}
+.crumb{color:#6b7a90;font-size:13px}
+h1{margin:8px 0 2px;font-size:24px;color:#1b3a6b}
+.desc{color:#6b7a90;margin:0 0 14px}
+.card{background:#fff;border:1px solid #e3e9f2;border-radius:6px;padding:16px 18px;box-shadow:0 1px 2px rgba(20,36,63,.04)}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.bar h2{margin:0 auto 0 0;font-size:16px}
+input,select,textarea{font:inherit;padding:7px 10px;border:1px solid #cdd6e3;border-radius:4px;background:#fff;min-width:0}
+textarea{width:100%;min-height:60px}
+button{font:inherit;padding:7px 14px;border:0;border-radius:4px;cursor:pointer;background:#1976d2;color:#fff}
+button.gray{background:#e7edf5;color:#1f2d3d}
+button.red{background:#e53935}
+button.sm{padding:4px 8px;font-size:12px}
+.wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{background:#f1f5fb;text-align:left;padding:9px 10px;border-bottom:2px solid #dbe3ef;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid #eef2f8;vertical-align:middle}
+tr:hover td{background:#fafcff}
+.tag{display:inline-block;padding:2px 10px;border-radius:10px;font-size:12px;color:#fff}
+.on-t{background:#2e9e6b}.off-t{background:#8a96a8}
+.pg{display:flex;justify-content:space-between;align-items:center;margin-top:12px;color:#6b7a90;font-size:13px}
+.pg div{display:flex;gap:4px}
+.empty{text-align:center;color:#8a96a8;padding:26px}
+#modal{position:fixed;inset:0;background:rgba(15,30,55,.5);display:none;align-items:flex-start;justify-content:center;padding:40px 12px;overflow:auto;z-index:20}
+#modal .box{background:#fff;border-radius:8px;width:760px;max-width:100%;padding:20px}
+#modal h3{margin:0 0 12px;color:#1b3a6b}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.grid label{display:flex;flex-direction:column;font-size:12.5px;color:#506078;gap:3px}
+.grid label.full{grid-column:1/-1}
+.grid input,.grid select{width:100%}
+.acts{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+#toast{position:fixed;right:20px;top:64px;z-index:30;display:flex;flex-direction:column;gap:8px}
+#toast div{padding:10px 16px;border-radius:5px;color:#fff;max-width:420px;box-shadow:0 3px 10px rgba(0,0,0,.2)}
+.ok{background:#2e9e6b}.er{background:#d93a3a}
+@media(max-width:800px){aside{display:none}main{margin-left:0}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><b>🎓 QL ĐÀO TẠO TÍN CHỈ</b><span>🔔 &nbsp; admin · Quản trị viên</span></header>
+<aside>
+  <a>🏠 Trang chủ</a><a>👤 Người dùng</a>
+  <a class="grp">📘 Quản lý đào tạo</a>
+  <div class="sub" id="menu"></div>
+  <a>📖 Học vụ</a><a>💲 Tài chính</a><a>📊 Báo cáo</a><a>⚙️ Hệ thống</a>
+</aside>
+<main>
+  <div class="crumb">Trang chủ › Quản lý đào tạo › <span id="crumb"></span></div>
+  <h1 id="title"></h1>
+  <p class="desc" id="desc"></p>
+  <div class="card" id="content"></div>
+</main>
+<div id="modal"><div class="box"><h3 id="mtitle"></h3><div id="mbody"></div></div></div>
+<div id="toast"></div>
+
+<script>
+// ===== CẤU HÌNH =====
+// Để rỗng nếu trang này nằm trong src/main/resources/static (cùng cổng với Spring Boot).
+// Nếu mở file riêng thì đặt thành "http://localhost:8080" (và backend phải bật CORS).
+const API_BASE = "";
+const USER_ID = ""; // UUID người thao tác (gửi qua header X-User-Id), có thể để trống
+
+const DEGREE = ["Đại học","Cao học","Tiến sĩ"];
+const EDU = ["Chính quy","Chất lượng cao","Liên thông","Văn bằng 2"];
+const STATUS = ["Đang đào tạo","Dừng đào tạo"];
+
+// f: [khóa, nhãn, kiểu(text|number|date|area|mảng chọn), bắt buộc, full-width]
+const ENT = {
+  majors: {
+    name: "Ngành đào tạo", desc: "Quản lý danh mục ngành đào tạo, gắn với khoa quản lý và thời gian hiệu lực.",
+    api: "/api/v1/majors",
+    cols: [["code","Mã ngành"],["name","Tên ngành"],["department_id","Khoa"],["effective_date","Hiệu lực từ"],["expiry_date","Hết hiệu lực"]],
+    f: [["department_id","Khoa (department_id)","text",1],["code","Mã ngành","text",1],["name","Tên ngành","text",1,1],
+        ["effective_date","Ngày hiệu lực","date",0,0,1],["expiry_date","Ngày hết hiệu lực","date",0,0,1],["description","Mô tả","area",0,1]]
+  },
+  "training-programs": {
+    name: "Chương trình đào tạo", desc: "Quản lý chương trình đào tạo của từng ngành: cơ cấu tín chỉ, thời gian đào tạo, chuẩn đầu ra, phiên bản.",
+    api: "/api/v1/training-programs",
+    cols: [["code","Mã CTĐT"],["name","Tên chương trình"],["degree_level","Bậc"],["education_type","Loại hình"],["total_credits","Tổng TC"],["admission_year","Năm TS"],["status","Trạng thái ĐT"]],
+    f: [["major_id","Ngành (major_id)","text",1],["department_id","Khoa (department_id)","text",1],["code","Mã chương trình","text",1],["name","Tên chương trình","text",1],
+        ["name_en","Tên tiếng Anh","text"],["version","Phiên bản","text"],["degree_level","Bậc đào tạo",DEGREE],["education_type","Loại hình",EDU],
+        ["total_credits","Tổng tín chỉ","number"],["required_credits","Tín chỉ bắt buộc","number"],["elective_credits","Tín chỉ tự chọn","number"],
+        ["internship_credits","Tín chỉ thực tập","number"],["thesis_credits","Tín chỉ khóa luận","number"],["admission_year","Năm tuyển sinh","number"],
+        ["duration_years","Thời gian chuẩn (năm)","number"],["max_duration_years","Thời gian tối đa (năm)","number"],
+        ["effective_date","Ngày hiệu lực","date"],["expiry_date","Ngày hết hiệu lực","date"],["status","Trạng thái đào tạo",STATUS],
+        ["description","Mô tả","area",0,1],["objectives","Mục tiêu đào tạo","area",0,1],["learning_outcomes","Chuẩn đầu ra","area",0,1]]
+  },
+  courses: {
+    name: "Học phần / Môn học", desc: "Danh mục học phần dùng chung toàn trường: tín chỉ, phân bổ thời lượng, khoa quản lý.",
+    api: "/api/v1/courses",
+    cols: [["course_code","Mã HP"],["course_name","Tên học phần"],["credits","Tín chỉ"],["course_type","Loại môn"],["theory_hours","LT"],["practice_hours","TH"]],
+    f: [["department_id","Khoa (department_id)","text",1],["course_code","Mã học phần","text",1],["course_name","Tên học phần","text",1],["course_name_en","Tên tiếng Anh","text"],
+        ["credits","Số tín chỉ","number",1],["course_type","Phân loại môn","text"],["theory_hours","Số tiết lý thuyết","number"],["practice_hours","Số tiết thực hành","number"],
+        ["self_study_hours","Số giờ tự học","number"],["internship_credits","Thực tập","number"],["description","Mô tả","area",0,1]]
+  },
+  pc: {
+    name: "Học phần của CTĐT", desc: "Gán học phần vào chương trình đào tạo: bắt buộc / tự chọn, nhóm tự chọn, tín chỉ, thứ tự hiển thị."
+  }
+};
+
+// ===== TIỆN ÍCH =====
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg, ok = true) {
+  const d = document.createElement("div"); d.className = ok ? "ok" : "er"; d.textContent = msg;
+  $("#toast").append(d); setTimeout(() => d.remove(), 4500);
+}
+async function call(method, url, body) {
+  const h = {"Content-Type": "application/json"}; if (USER_ID) h["X-User-Id"] = USER_ID;
+  let r;
+  try { r = await fetch(API_BASE + url, {method, headers: h, body: body ? JSON.stringify(body) : undefined}); }
+  catch (e) { throw new Error("Không kết nối được API (" + (API_BASE || "cùng máy chủ") + "). Kiểm tra backend và CORS."); }
+  let j = {}; try { j = await r.json(); } catch (e) {}
+  if (!r.ok) {
+    const det = j.errors ? " – " + Object.entries(j.errors).map(([k, v]) => k + ": " + v).join("; ") : "";
+    throw new Error((j.message || "Lỗi " + r.status) + det);
+  }
+  return j;
+}
+const run = async fn => { try { await fn(); } catch (e) { toast(e.message, false); } };
+const qs = o => Object.entries(o).filter(([, v]) => v !== "" && v != null).map(([k, v]) => k + "=" + encodeURIComponent(v)).join("&");
+const short = (k, v) => v == null ? "" : k.endsWith("_id") ? String(v).slice(0, 8) + "…" : k.includes("date") ? String(v).slice(0, 10) : v;
+const badge = on => `<span class="tag ${on ? "on-t" : "off-t"}">${on ? "Hoạt động" : "Đã khóa"}</span>`;
+
+// ===== MENU =====
+let cur = "training-programs", rows = [], pageNo = 1;
+$("#menu").innerHTML = Object.keys(ENT).map(k => `<a data-k="${k}">${ENT[k].name}</a>`).join("");
+$("#menu").onclick = e => { if (e.target.dataset.k) show(e.target.dataset.k); };
+
+function show(k) {
+  cur = k; pageNo = 1;
+  document.querySelectorAll("#menu a").forEach(a => a.classList.toggle("on", a.dataset.k === k));
+  $("#crumb").textContent = ENT[k].name; $("#title").textContent = "Quản lý " + ENT[k].name.toLowerCase();
+  $("#desc").textContent = ENT[k].desc;
+  k === "pc" ? initPC() : initList();
+}
+
+// ===== DANH SÁCH CRUD CHUNG (ngành, chương trình, môn học) =====
+function initList() {
+  const E = ENT[cur];
+  $("#content").innerHTML = `
+    <div class="bar"><h2>Danh sách ${esc(E.name.toLowerCase())}</h2>
+      <input id="kw" placeholder="Tìm theo mã / tên…" size="26">
+      <select id="act"><option value="">Tất cả trạng thái</option><option value="1">Đang hoạt động</option><option value="0">Đã khóa</option></select>
+      <button id="bs">🔍 Tìm kiếm</button><button class="gray" id="br">♻ Khôi phục theo ID</button><button id="bn">＋ Thêm mới</button></div>
+    <div class="wrap"><table><thead><tr><th>STT</th>${E.cols.map(c => `<th>${c[1]}</th>`).join("")}<th>Hoạt động</th><th>Thao tác</th></tr></thead><tbody id="tb"></tbody></table></div>
+    <div class="pg"><span id="info"></span><div id="pgb"></div></div>`;
+  $("#bs").onclick = () => { pageNo = 1; load(); };
+  $("#kw").onkeydown = e => { if (e.key === "Enter") $("#bs").click(); };
+  $("#bn").onclick = () => form(null);
+  $("#br").onclick = () => run(async () => {
+    const id = prompt("Nhập ID bản ghi đã xóa cần khôi phục:"); if (!id) return;
+    await call("PATCH", `${E.api}/${id.trim()}/restore`); toast("Đã khôi phục"); load();
+  });
+  load();
+}
+
+function load() {
+  run(async () => {
+    const E = ENT[cur], limit = 10;
+    const j = await call("GET", E.api + "?" + qs({page: pageNo, limit, keyword: $("#kw").value.trim(), is_active: $("#act").value}));
+    rows = j.data || []; const p = j.pagination || {page: 1, limit, total: rows.length};
+    $("#tb").innerHTML = rows.length ? rows.map((r, i) => `<tr><td>${(p.page - 1) * p.limit + i + 1}</td>
+      ${E.cols.map(c => `<td>${esc(short(c[0], r[c[0]]))}</td>`).join("")}<td>${badge(r.is_active)}</td>
+      <td><button class="sm" data-a="e" data-i="${i}">Sửa</button> <button class="sm gray" data-a="s" data-i="${i}">${r.is_active ? "Khóa" : "Mở"}</button> <button class="sm red" data-a="d" data-i="${i}">Xóa</button></td></tr>`).join("")
+      : `<tr><td class="empty" colspan="${E.cols.length + 3}">Không có dữ liệu</td></tr>`;
+    const pages = Math.max(1, Math.ceil(p.total / p.limit));
+    $("#info").textContent = p.total ? `Hiển thị ${(p.page - 1) * p.limit + 1} – ${(p.page - 1) * p.limit + rows.length} trong ${p.total} bản ghi` : "0 bản ghi";
+    $("#pgb").innerHTML = `<button class="sm gray" ${pageNo <= 1 ? "disabled" : ""} data-p="${pageNo - 1}">«</button><button class="sm" disabled>${pageNo}/${pages}</button><button class="sm gray" ${pageNo >= pages ? "disabled" : ""} data-p="${pageNo + 1}">»</button>`;
+  });
+}
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b || cur === "pc") return;
+  if (b.dataset.p) { pageNo = +b.dataset.p; load(); return; }
+  const r = rows[b.dataset.i], E = ENT[cur];
+  if (b.dataset.a === "e") form(r);
+  if (b.dataset.a === "s") run(async () => { await call("PATCH", `${E.api}/${r.id}/status`, {is_active: r.is_active ? 0 : 1}); toast("Đã cập nhật trạng thái"); load(); });
+  if (b.dataset.a === "d" && confirm("Xóa (xóa mềm) bản ghi này?")) run(async () => { await call("DELETE", `${E.api}/${r.id}`); toast("Đã xóa"); load(); });
+});
+
+// ===== FORM THÊM / SỬA =====
+function form(r) {
+  const E = ENT[cur];
+  $("#mtitle").textContent = (r ? "Cập nhật " : "Thêm mới ") + E.name.toLowerCase();
+  $("#mbody").innerHTML = `<form id="fm"><div class="grid">${E.f.map(([k, lb, t, req, full]) => {
+    const v = r && r[k] != null ? (t === "date" ? String(r[k]).slice(0, 10) : r[k]) : "";
+    const a = `name="${k}" ${req ? "required" : ""}`;
+    const inp = Array.isArray(t)
+      ? `<select ${a}><option value="">-- chọn --</option>${t.map(o => `<option ${o === v ? "selected" : ""}>${o}</option>`).join("")}</select>`
+      : t === "area" ? `<textarea ${a}>${esc(v)}</textarea>`
+      : `<input ${a} type="${t}" ${t === "number" ? 'step="any"' : ""} value="${esc(v)}">`;
+    return `<label class="${full ? "full" : ""}">${lb}${req ? " *" : ""}${inp}</label>`;
+  }).join("")}</div><div class="acts"><button type="button" class="gray" id="mc">Hủy</button><button>Lưu</button></div></form>`;
+  $("#modal").style.display = "flex";
+  $("#mc").onclick = closeM;
+  $("#fm").onsubmit = ev => {
+    ev.preventDefault();
+    const body = {};
+    E.f.forEach(([k, , t, , , dt]) => {
+      let v = ev.target.elements[k].value.trim();
+      if (v === "") body[k] = null;
+      else if (t === "number") body[k] = Number(v);
+      else body[k] = (dt && t === "date") ? v + "T00:00:00" : v; // majors dùng DATETIME2
+    });
+    run(async () => {
+      await call(r ? "PUT" : "POST", r ? `${E.api}/${r.id}` : E.api, body);
+      toast(r ? "Đã cập nhật" : "Đã thêm mới"); closeM(); load();
+    });
+  };
+}
+const closeM = () => $("#modal").style.display = "none";
+$("#modal").onclick = e => { if (e.target.id === "modal") closeM(); };
+
+// ===== HỌC PHẦN CỦA CHƯƠNG TRÌNH (training_program_courses) =====
+let pid = "";
+function initPC() {
+  $("#content").innerHTML = `
+    <div class="bar"><h2>Chọn chương trình</h2><select id="pp" style="min-width:320px"></select></div>
+    <div class="bar" id="addbar" style="background:#f6f9fd;padding:10px;border-radius:5px">
+      <select id="pcc" style="min-width:260px"></select>
+      <select id="pcr"><option value="true">Bắt buộc</option><option value="false">Tự chọn</option></select>
+      <input id="pcg" placeholder="Nhóm tự chọn" size="12"><input id="pct" type="number" step="any" placeholder="Tín chỉ" style="width:90px">
+      <input id="pco" type="number" placeholder="Thứ tự" style="width:80px"><button id="pca">＋ Gán học phần</button></div>
+    <div class="wrap"><table><thead><tr><th>STT</th><th>Mã HP</th><th>Tên học phần</th><th>Loại</th><th>Nhóm</th><th>Tín chỉ</th><th>Thứ tự</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="tb"></tbody></table></div>`;
+  run(async () => {
+    const [p, c] = await Promise.all([call("GET", ENT["training-programs"].api + "?limit=100"), call("GET", ENT.courses.api + "?limit=100")]);
+    $("#pp").innerHTML = (p.data || []).map(x => `<option value="${x.id}">${esc(x.code)} – ${esc(x.name)}</option>`).join("");
+    $("#pcc").innerHTML = (c.data || []).map(x => `<option value="${x.id}">${esc(x.course_code)} – ${esc(x.course_name)}</option>`).join("");
+    pid = $("#pp").value; loadPC();
+  });
+  $("#pp").onchange = () => { pid = $("#pp").value; loadPC(); };
+  $("#pca").onclick = () => run(async () => {
+    const n = id => $(id).value.trim();
+    await call("POST", `${ENT["training-programs"].api}/${pid}/courses`, {
+      course_id: $("#pcc").value, is_required: $("#pcr").value === "true", group_code: n("#pcg") || null,
+      credits: n("#pct") === "" ? null : Number(n("#pct")), sort_order: n("#pco") === "" ? null : Number(n("#pco"))});
+    toast("Đã gán học phần"); loadPC();
+  });
+}
+function loadPC() {
+  if (!pid) { $("#tb").innerHTML = `<tr><td class="empty" colspan="9">Chưa có chương trình nào</td></tr>`; return; }
+  run(async () => {
+    const j = await call("GET", `${ENT["training-programs"].api}/${pid}/courses`); rows = j.data || [];
+    $("#tb").innerHTML = rows.length ? rows.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(r.course_code)}</td><td>${esc(r.course_name)}</td>
+      <td>${r.is_required ? "Bắt buộc" : "Tự chọn"}</td><td>${esc(r.group_code)}</td><td>${esc(r.credits)}</td><td>${esc(r.sort_order)}</td><td>${esc(r.status)}</td>
+      <td><button class="sm red" data-r="${r.id}">Gỡ</button></td></tr>`).join("")
+      : `<tr><td class="empty" colspan="9">Chương trình chưa có học phần</td></tr>`;
+  });
+}
+$("#content").addEventListener("click", e => {
+  const id = e.target.dataset.r;
+  if (id && cur === "pc" && confirm("Gỡ học phần khỏi chương trình?"))
+    run(async () => { await call("DELETE", `/api/v1/training-program-courses/${id}`); toast("Đã gỡ"); loadPC(); });
+});
+
+show("training-programs");
+</script>
+</body>
+</html>

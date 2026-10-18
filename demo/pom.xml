@@ -31,6 +31,12 @@
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
+        <!-- Bean Validation (hibernate-validator): BẮT BUỘC để @Valid, @NotBlank, @NotNull... có tác dụng -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
         <!-- Driver SQL Server -->
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>
@@ -38,12 +44,12 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Swagger UI / OpenAPI -->
+        <!-- Swagger UI / OpenAPI (chỉ khai báo MỘT lần) -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>2.5.0</version>
-        </dependency> 
+        </dependency>
 
         <!-- Testing -->
         <dependency>

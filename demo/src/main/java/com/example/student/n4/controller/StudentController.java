@@ -1,7 +1,7 @@
-package com.example.student.controller;
+package com.example.student.n4.controller;
 
-import com.example.student.entity.Student;
-import com.example.student.service.StudentService;
+import com.example.student.n4.entity.Student;
+import com.example.student.n4.service.StudentService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

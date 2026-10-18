@@ -1,4 +1,4 @@
-package com.example.student.entity;
+package com.example.student.n4.entity;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.UuidGenerator;
